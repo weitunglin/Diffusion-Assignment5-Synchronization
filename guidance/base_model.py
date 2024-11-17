@@ -116,9 +116,9 @@ class BaseModel(metaclass=ABCMeta):
         Output:
             pred_x0s: [B,*]
         """
-        
-        # TODO: Implement compute_tweedie
-        raise NotImplementedError("compute_tweedie is not implemented yet.")
+
+        pred_x0s = (xts - sigmas[timestep] * eps) / alphas[timestep]
+        return pred_x0s
 
         
     def compute_prev_state(
@@ -131,9 +131,28 @@ class BaseModel(metaclass=ABCMeta):
             pred_prev_sample: [N,C,H,W]
         """
         
-        # TODO: Implement compute_prev_state
-        raise NotImplementedError("compute_prev_state is not implemented yet.")
-        
+        """
+        task 1 (wide image)
+        """
+        # s = self.model.scheduler
+        """
+        task 2 (ambiguous image)
+        """
+        s = self.stage_1.scheduler
+
+        prev_t = timestep - s.config.num_train_timesteps // s.num_inference_steps
+        alpha_t = torch.sqrt(s.alphas_cumprod[timestep])
+        one_minus_alpha_t = torch.sqrt(1 - s.alphas_cumprod[timestep])
+        alpha_prev_t = torch.where(prev_t >= 0, torch.sqrt(s.alphas_cumprod[prev_t]), torch.tensor(1.0, device=xts.device))
+        one_minus_alpha_prev_t = torch.where(prev_t >= 0, torch.sqrt(1 - s.alphas_cumprod[prev_t]), torch.tensor(0.0, device=xts.device))
+
+        xt = one_minus_alpha_prev_t / one_minus_alpha_t
+        x0 = alpha_prev_t - alpha_t / one_minus_alpha_t * one_minus_alpha_prev_t
+
+        pred_prev_sample = xts * xt + pred_x0s * x0
+
+        return pred_prev_sample
+
     def one_step_process(
         self, input_params, timestep, alphas, sigmas, **kwargs
     ):

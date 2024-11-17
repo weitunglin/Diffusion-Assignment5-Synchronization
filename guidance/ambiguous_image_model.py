@@ -224,7 +224,7 @@ class AmbiguousImageModel(BaseModel):
             )
             noise_preds = noise_preds.reshape(*orig_xts_shape[:-3], -1, H, W)
             
-            return noise_preds
+            return noise_preds[:, :3, ...]
         
         else:
             orig_xts_shape = xts.shape
@@ -247,7 +247,7 @@ class AmbiguousImageModel(BaseModel):
             )
             noise_preds = noise_preds.reshape(*orig_xts_shape[:-3], -1, H, W)
             
-            return noise_preds
+            return noise_preds[:, :3, ...]
 
 
     @torch.no_grad()
